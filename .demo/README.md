@@ -99,6 +99,7 @@ talosctl --nodes <node-ip> version
 - **Kubernetes Version**: 1.30.3
 - **Talos Version**: v1.11.0
 - **CNI**: Cilium 1.16.2
+- **GitOps**: ArgoCD v2.11.4
 
 ## Cost
 
