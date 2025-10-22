@@ -133,6 +133,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     
     print_info "Your cluster endpoint:"
     terraform output cluster_endpoint
+    
+    echo ""
+    print_info "ArgoCD has been installed!"
+    echo ""
+    terraform output argocd_access_instructions
 else
     print_warn "Deployment skipped."
 fi
