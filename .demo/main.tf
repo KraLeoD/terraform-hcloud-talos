@@ -18,11 +18,11 @@ module "talos" {
 
   # Control plane configuration
   control_plane_count       = 1
-  control_plane_server_type = "cx23"
+  control_plane_server_type = "cx22"
 
   # Worker configuration
   worker_count       = 2
-  worker_server_type = "cx23"
+  worker_server_type = "cx22"
 
   # Network configuration (defaults are fine, but listed here for reference)
   network_ipv4_cidr = "10.0.0.0/16"
@@ -35,6 +35,10 @@ module "talos" {
 
   # Enable alias IP for internal load balancing
   enable_alias_ip = true
+
+  # Deploy ArgoCD during cluster creation
+  deploy_argocd = true
+  argocd_version = "v2.11.4"
 }
 
 # Output the kubeconfig and talosconfig
