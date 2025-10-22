@@ -37,8 +37,6 @@ module "talos" {
   enable_alias_ip = true
 
   # Deploy ArgoCD during cluster creation
-  deploy_argocd = true
-  argocd_version = "v2.11.4"
 }
 
 # Output the kubeconfig and talosconfig
