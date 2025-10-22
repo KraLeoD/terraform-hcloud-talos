@@ -10,7 +10,7 @@ spec:
   project: default
   source:
     path: .demo/manifests/apps
-    repoURL: https://github.com/YOUR-USERNAME/YOUR-REPO  # TODO: Update this!
+    repoURL: https://github.com/KraLeoD/terraform-hcloud-talos  # TODO: Update this!
     targetRevision: HEAD
   destination:
     name: in-cluster
