@@ -39,6 +39,9 @@ module "talos" {
   enable_alias_ip = false
 
   # Deploy ArgoCD during cluster creation
+  extraManifests = [
+    "https://raw.githubusercontent.com/argoproj/argo-cd/v2.11.4/manifests/install.yaml"
+  ]
 }
 
 # Output the kubeconfig and talosconfig
