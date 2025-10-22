@@ -20,11 +20,11 @@ module "talos" {
 
   # Control plane configuration
   control_plane_count       = 1
-  control_plane_server_type = "cx22"
+  control_plane_server_type = "cx23"
 
   # Worker configuration
-  worker_count       = 2
-  worker_server_type = "cx22"
+  worker_count       = 1
+  worker_server_type = "cx23"
 
   # Network configuration (defaults are fine, but listed here for reference)
   network_ipv4_cidr = "10.0.0.0/16"
@@ -36,7 +36,7 @@ module "talos" {
   enable_floating_ip = true
 
   # Enable alias IP for internal load balancing
-  enable_alias_ip = true
+  enable_alias_ip = false
 
   # Deploy ArgoCD during cluster creation
 }
