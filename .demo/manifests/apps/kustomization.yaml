@@ -1,3 +1,2 @@
 resources:
-  - nginx/deployment.yaml
-  - traefik/kustomization.yaml
+  - nginx/kustomization.yaml
