@@ -19,8 +19,8 @@ terraform {
       version = ">= 0.11.0"
     }
     netcup = {
-      source  = "aellwein/netcup"
-      version = ">= 0.1.3"
+      source  = "rincedd/netcup"
+      version = ">= 0.0.1"
     }
   }
 }
