@@ -19,7 +19,7 @@ terraform {
       version = ">= 0.11.0"
     }
     netcup = {
-      source  = "rincedd/netcup"
+      source  = "rincedd/netcup-ccp"
       version = ">= 0.0.1"
     }
   }
