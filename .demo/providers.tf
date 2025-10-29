@@ -18,10 +18,6 @@ terraform {
       source  = "hashicorp/time"
       version = ">= 0.11.0"
     }
-    netcup = {
-      source  = "rincedd/netcup-ccp"
-      version = ">= 0.0.1"
-    }
   }
 }
 
@@ -40,11 +36,4 @@ provider "kubernetes" {
   client_certificate     = module.talos.kubeconfig_data.client_certificate
   client_key             = module.talos.kubeconfig_data.client_key
   cluster_ca_certificate = module.talos.kubeconfig_data.cluster_ca_certificate
-}
-
-# netcup provider for DNS management
-provider "netcup" {
-  customer_id  = var.netcup_customer_id
-  api_key      = var.netcup_api_key
-  api_password = var.netcup_api_password
 }
