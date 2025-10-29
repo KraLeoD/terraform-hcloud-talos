@@ -1,0 +1,128 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: authentik
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://charts.goauthentik.io
+    chart: authentik
+    targetRevision: 2024.8.3
+    helm:
+      values: |
+        # Global configuration
+        global:
+          # Change this to your domain
+          # storageClass: ""  # Use default storage class
+          
+        authentik:
+          # Secret key for Authentik - CHANGE THIS!
+          secret_key: "CHANGEME-authentik-secret-key-must-be-at-least-50-characters-long"
+          
+          # Error reporting (disable for production or configure)
+          error_reporting:
+            enabled: false
+          
+          # PostgreSQL configuration
+          postgresql:
+            host: "postgresql"
+            name: "authentik"
+            user: "authentik"
+            password: "CHANGEME-authentik-password"
+          
+          # Redis configuration
+          redis:
+            host: "redis-master"
+            password: "CHANGEME-redis-password"
+          
+          # Email configuration (optional - configure later)
+          email:
+            host: ""
+            port: 587
+            username: ""
+            password: ""
+            use_tls: true
+            from: "authentik@example.com"
+        
+        # Server configuration
+        server:
+          replicas: 1
+          
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          
+          # Ingress configuration
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            annotations:
+              cert-manager.io/cluster-issuer: "letsencrypt-prod"  # If you have cert-manager
+              external-dns.alpha.kubernetes.io/target: "your-cluster-ip-or-domain"
+            hosts:
+              - host: auth.example.com  # CHANGE THIS
+                paths:
+                  - path: "/"
+                    pathType: Prefix
+            tls:
+              - secretName: authentik-tls
+                hosts:
+                  - auth.example.com  # CHANGE THIS
+          
+          # Service configuration
+          service:
+            type: ClusterIP
+        
+        # Worker configuration
+        worker:
+          replicas: 1
+          
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+        
+        # Persistence for media files
+        persistence:
+          enabled: true
+          size: 5Gi
+          # storageClass: ""  # Use default storage class
+        
+        # Metrics (optional)
+        prometheus:
+          serviceMonitor:
+            enabled: false  # Enable if you have Prometheus operator
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: authentik
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  
+  # Wait for dependencies
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
