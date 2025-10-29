@@ -1,7 +1,7 @@
 module "talos" {
   source = "../"
 
-  # Versions - using stable versions from the README
+  # Versions
   talos_version      = "v1.11.0"
   kubernetes_version = "1.30.3"
   cilium_version     = "1.16.2"
@@ -13,7 +13,7 @@ module "talos" {
   cluster_name    = "kraleo"
   datacenter_name = "fsn1-dc14"
 
-  # Firewall - auto-detect your Ubuntu VM's IP
+  # Firewall - allow all (we'll restrict later)
   firewall_use_current_ip = false
   firewall_kube_api_source  = ["0.0.0.0/0"]
   firewall_talos_api_source = ["0.0.0.0/0"]
@@ -26,22 +26,15 @@ module "talos" {
   worker_count       = 1
   worker_server_type = "cx23"
 
-  # Network configuration (defaults are fine, but listed here for reference)
+  # Network configuration
   network_ipv4_cidr = "10.0.0.0/16"
   node_ipv4_cidr    = "10.0.1.0/24"
   pod_ipv4_cidr     = "10.0.16.0/20"
   service_ipv4_cidr = "10.0.8.0/21"
 
-  # Enable floating IP for stable API endpoint (optional but recommended)
-  enable_floating_ip = true
-
-  # Enable alias IP for internal load balancing
+  # Disable floating IP and alias IP for simplicity
+  enable_floating_ip = false
   enable_alias_ip = false
-
-  # Deploy ArgoCD during cluster creation
-#  extraManifests = [
-#    "https://raw.githubusercontent.com/argoproj/argo-cd/v2.11.4/manifests/install.yaml"
-#  ]
 }
 
 # Output the kubeconfig and talosconfig
@@ -58,4 +51,8 @@ output "kubeconfig" {
 output "cluster_endpoint" {
   value       = module.talos.public_ipv4_list[0]
   description = "Public IP of the control plane"
+}
+
+output "hetzner_network_id" {
+  value = module.talos.hetzner_network_id
 }
