@@ -1,0 +1,87 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: external-dns
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://kubernetes-sigs.github.io/external-dns
+    chart: external-dns
+    targetRevision: 1.14.5
+    helm:
+      values: |
+        # Cloudflare provider configuration
+        provider: cloudflare
+        
+        # Use cluster IP services
+        sources:
+          - ingress
+          - service
+        
+        # Cloudflare specific settings
+        env:
+          - name: CF_API_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: cloudflare-api-token
+                key: apiToken
+        
+        # Policy for DNS records
+        policy: sync  # 'sync' will update/delete records, 'upsert-only' will only create/update
+        
+        # Registry for tracking ownership
+        registry: txt
+        txtOwnerId: "kraleo-cluster"
+        txtPrefix: "external-dns-"
+        
+        # Logging
+        logLevel: info
+        logFormat: json
+        
+        # Resource requests/limits
+        resources:
+          requests:
+            cpu: 50m
+            memory: 50Mi
+          limits:
+            cpu: 100m
+            memory: 100Mi
+        
+        # Security context
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          fsGroup: 65534
+          capabilities:
+            drop:
+              - ALL
+          readOnlyRootFilesystem: true
+        
+        # Domain filter - will be set via configmap or you can hardcode it here
+        # domainFilters:
+        #   - example.com
+        
+        # Extra arguments
+        extraArgs:
+          - --cloudflare-proxied  # Enable Cloudflare proxy (orange cloud)
+          - --annotation-filter=external-dns.alpha.kubernetes.io/target  # Only process ingresses with this annotation
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: external-dns
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
