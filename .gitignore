@@ -244,6 +244,15 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 
+# SOPS Secret Management - CRITICAL: Do not commit!
+.sops/
+.sops/*.agekey
+*.agekey
+.secrets-backup-*.txt
+*.decrypted~
+*secret*.yaml.dec
+*secret*.yaml.decrypted
+
 # Windows shortcuts
 *.lnk
 
