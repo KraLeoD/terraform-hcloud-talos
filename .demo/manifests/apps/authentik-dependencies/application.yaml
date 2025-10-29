@@ -1,0 +1,133 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: postgresql
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://charts.bitnami.com/bitnami
+    chart: postgresql
+    targetRevision: 15.5.32
+    helm:
+      values: |
+        # PostgreSQL configuration
+        auth:
+          enablePostgresUser: true
+          postgresPassword: "CHANGEME-postgres-password"
+          username: authentik
+          password: "CHANGEME-authentik-password"
+          database: authentik
+        
+        # Primary configuration
+        primary:
+          persistence:
+            enabled: true
+            size: 8Gi
+            storageClass: ""  # Use default storage class
+          
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          
+          # PostgreSQL configuration
+          extendedConfiguration: |
+            max_connections = 200
+            shared_buffers = 128MB
+        
+        # Backup configuration (optional)
+        backup:
+          enabled: false
+        
+        # Metrics
+        metrics:
+          enabled: true
+          serviceMonitor:
+            enabled: false  # Enable if you have Prometheus operator
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: authentik
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: redis
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://charts.bitnami.com/bitnami
+    chart: redis
+    targetRevision: 19.6.4
+    helm:
+      values: |
+        # Redis configuration
+        architecture: standalone
+        
+        auth:
+          enabled: true
+          password: "CHANGEME-redis-password"
+        
+        master:
+          persistence:
+            enabled: true
+            size: 2Gi
+            storageClass: ""  # Use default storage class
+          
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+        
+        # Disable replica for simple setup
+        replica:
+          replicaCount: 0
+        
+        # Metrics
+        metrics:
+          enabled: true
+          serviceMonitor:
+            enabled: false  # Enable if you have Prometheus operator
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: authentik
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
