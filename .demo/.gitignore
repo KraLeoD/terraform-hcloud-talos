@@ -25,3 +25,9 @@ override.tf.json
 # CLI config
 .terraformrc
 terraform.rc
+
+# SOPS Secret Management
+.secrets-backup-*.txt
+*.secrets.backup
+*secret*.yaml.dec
+*secret*.yaml.decrypted
