@@ -261,3 +261,6 @@ $RECYCLE.BIN/
 debug.tf
 
 .aider*
+
+# SOPS encryption keys - NEVER commit these!
+.sops/age.agekey
