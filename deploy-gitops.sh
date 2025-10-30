@@ -110,18 +110,50 @@ echo ""
 
 # Step 6: Install ArgoCD
 print_step "Step 6: Installing ArgoCD"
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.11.4/manifests/install.yaml
 
-print_info "⏳ Waiting for ArgoCD to be ready (this may take 2-3 minutes)..."
-kubectl wait --for=condition=available --timeout=300s \
-    deployment/argocd-server \
-    -n argocd 2>/dev/null || print_warn "ArgoCD server not ready yet, continuing..."
+# Verify kubectl is working first
+if ! kubectl get nodes &>/dev/null; then
+    print_error "kubectl cannot connect to cluster!"
+    print_error "KUBECONFIG: $KUBECONFIG"
+    exit 1
+fi
 
-kubectl wait --for=condition=available --timeout=300s \
-    deployment/argocd-repo-server \
-    -n argocd 2>/dev/null || print_warn "ArgoCD repo-server not ready yet, continuing..."
+print_info "kubectl is working, installing ArgoCD..."
 
-print_info "✅ ArgoCD installed"
+# Create namespace
+kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+
+# Install ArgoCD
+if kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.11.4/manifests/install.yaml; then
+    print_info "✅ ArgoCD manifests applied"
+else
+    print_error "Failed to apply ArgoCD manifests"
+    exit 1
+fi
+
+print_info "⏳ Waiting for ArgoCD pods to start (this may take 2-3 minutes)..."
+sleep 30  # Give pods time to start creating
+
+# Wait for ArgoCD server
+if kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd 2>/dev/null; then
+    print_info "✅ ArgoCD server is ready"
+else
+    print_warn "⚠️  ArgoCD server didn't become ready in time"
+    print_info "Checking pod status..."
+    kubectl get pods -n argocd
+fi
+
+# Wait for ArgoCD repo-server
+if kubectl wait --for=condition=available --timeout=300s deployment/argocd-repo-server -n argocd 2>/dev/null; then
+    print_info "✅ ArgoCD repo-server is ready"
+else
+    print_warn "⚠️  ArgoCD repo-server didn't become ready in time"
+fi
+
+# Show current status
+print_info "Current ArgoCD pods status:"
+kubectl get pods -n argocd
+
 echo ""
 
 # Step 7: Install ArgoCD SOPS plugin
