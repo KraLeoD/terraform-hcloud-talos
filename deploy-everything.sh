@@ -255,7 +255,11 @@ chmod 600 kubeconfig talosconfig
 export KUBECONFIG="$SCRIPT_DIR/.demo/kubeconfig"
 export TALOSCONFIG="$SCRIPT_DIR/.demo/talosconfig"
 
+# Get cluster IP for later use
+CLUSTER_IP=$(terraform output -raw cluster_endpoint)
+
 print_info "✅ Configs exported"
+print_info "Cluster endpoint: $CLUSTER_IP"
 
 cd ..
 
@@ -265,31 +269,77 @@ cd ..
 
 print_section "PHASE 5: Wait for Cluster Ready"
 
-print_step "Waiting for nodes to be ready (may take 5-10 minutes)..."
+print_step "Waiting for Kubernetes API to be ready..."
+print_info "This can take 5-10 minutes for Talos to bootstrap..."
+echo ""
 
-MAX_ATTEMPTS=60
+MAX_ATTEMPTS=120  # 20 minutes total
 ATTEMPT=0
+API_READY=false
 
 while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-    if kubectl get nodes &>/dev/null; then
-        print_info "Cluster API is accessible!"
+    ATTEMPT=$((ATTEMPT + 1))
+    
+    # Try to get nodes with timeout
+    if timeout 10 kubectl get nodes &>/dev/null; then
+        print_info "✅ Kubernetes API is responding!"
+        API_READY=true
         break
     fi
-    ATTEMPT=$((ATTEMPT + 1))
-    echo "  Attempt $ATTEMPT/$MAX_ATTEMPTS - waiting for cluster API..."
+    
+    if [ $((ATTEMPT % 6)) -eq 0 ]; then
+        echo "  Still waiting... ($((ATTEMPT * 10))s elapsed)"
+    fi
     sleep 10
 done
 
-if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
-    print_error "Cluster API did not become accessible"
+if [ "$API_READY" = false ]; then
+    print_error "Kubernetes API did not become ready after $((MAX_ATTEMPTS * 10)) seconds"
+    print_info "You can check the cluster status manually:"
+    echo "  talosctl --nodes $CLUSTER_IP health --server=false"
     exit 1
 fi
 
-# Wait for nodes
-kubectl wait --for=condition=ready node --all --timeout=600s
+echo ""
+print_step "Waiting for nodes to become Ready..."
 
+# More aggressive wait with retries
+MAX_NODE_WAIT=60  # 10 minutes
+NODE_ATTEMPT=0
+NODES_READY=false
+
+while [ $NODE_ATTEMPT -lt $MAX_NODE_WAIT ]; do
+    NODE_ATTEMPT=$((NODE_ATTEMPT + 1))
+    
+    if kubectl wait --for=condition=ready node --all --timeout=10s &>/dev/null; then
+        NODES_READY=true
+        break
+    fi
+    
+    if [ $((NODE_ATTEMPT % 6)) -eq 0 ]; then
+        echo "  Nodes not ready yet... ($((NODE_ATTEMPT * 10))s elapsed)"
+        kubectl get nodes 2>/dev/null || echo "  (Still waiting for node data...)"
+    fi
+    sleep 10
+done
+
+if [ "$NODES_READY" = false ]; then
+    print_error "Nodes did not become ready"
+    print_info "Current node status:"
+    kubectl get nodes
+    exit 1
+fi
+
+echo ""
 print_info "✅ Cluster is ready!"
 kubectl get nodes
+echo ""
+
+# Wait a bit more for system pods
+print_step "Waiting for core system pods..."
+sleep 30
+
+kubectl get pods -n kube-system
 
 # ============================================
 # PHASE 6: Create Namespaces & Secrets
@@ -476,7 +526,6 @@ fi
 print_section "PHASE 10: Access Information"
 
 ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' 2>/dev/null | base64 -d) || ARGOCD_PASSWORD="Not ready yet"
-CLUSTER_IP=$(cd .demo && terraform output -raw cluster_endpoint)
 
 echo "🎉 DEPLOYMENT COMPLETE!"
 echo ""
