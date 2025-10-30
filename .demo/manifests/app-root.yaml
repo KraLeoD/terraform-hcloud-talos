@@ -5,16 +5,15 @@ metadata:
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
-
 spec:
   project: default
   source:
     path: .demo/manifests/apps
-    repoURL: https://github.com/KraLeoD/terraform-hcloud-talos  # TODO: Update this!
-    targetRevision: HEAD
+    repoURL: https://github.com/KraLeoD/terraform-hcloud-talos  # UPDATE THIS!
+    targetRevision: main  # or master, depending on your branch
   destination:
-    name: in-cluster
-    namespace: default
+    server: https://kubernetes.default.svc
+    namespace: argocd
   syncPolicy:
     automated:
       prune: true
