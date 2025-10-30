@@ -5,7 +5,7 @@ resources:
   - traefik.yaml
   - external-dns/application.yaml
   - authentik-dependencies/application.yaml
-  - authentik-dependencies/secrets/postgres-secret.yaml
-  - authentik-dependencies/secrets/redis-secret.yaml
+#  - authentik-dependencies/secrets/postgres-secret.yaml
+#  - authentik-dependencies/secrets/redis-secret.yaml
   - authentik/application.yaml
-  - authentik/secrets/authentik-secret.yaml
+#  - authentik/secrets/authentik-secret.yaml
