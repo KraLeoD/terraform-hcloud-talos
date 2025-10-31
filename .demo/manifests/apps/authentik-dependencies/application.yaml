@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://charts.bitnami.com/bitnami
     chart: postgresql
-    targetRevision: 16.4.2
+    targetRevision: 18.1.3
     helm:
       values: |
         # PostgreSQL configuration
@@ -83,7 +83,7 @@ spec:
   source:
     repoURL: https://charts.bitnami.com/bitnami
     chart: redis
-    targetRevision: 20.5.5
+    targetRevision: 23.2.2
     helm:
       values: |
         # Redis configuration
