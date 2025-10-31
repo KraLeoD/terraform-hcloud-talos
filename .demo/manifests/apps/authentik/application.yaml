@@ -15,14 +15,20 @@ spec:
       values: |
         # Global configuration
         global:
-          # Change this to your domain
-          # storageClass: ""  # Use default storage class
+          # Use environment variables from secrets
+          envFrom:
+            - secretRef:
+                name: authentik
 
         authentik:
-          # Secret key for Authentik - CHANGE THIS!
-          secret_key: "CHANGEME-authentik-secret-key-must-be-at-least-50-characters-long"
+          # Use secret for secret_key
+          secret_key:
+            valueFrom:
+              secretKeyRef:
+                name: authentik
+                key: secret-key
 
-          # Error reporting (disable for production or configure)
+          # Error reporting
           error_reporting:
             enabled: false
 
@@ -31,21 +37,20 @@ spec:
             host: "postgresql"
             name: "authentik"
             user: "authentik"
-            password: "CHANGEME-authentik-password"
+            password:
+              valueFrom:
+                secretKeyRef:
+                  name: authentik
+                  key: db-password
 
           # Redis configuration
           redis:
             host: "redis-master"
-            password: "CHANGEME-redis-password"
-
-          # Email configuration (optional - configure later)
-          email:
-            host: ""
-            port: 587
-            username: ""
-            password: ""
-            use_tls: true
-            from: "authentik@example.com"
+            password:
+              valueFrom:
+                secretKeyRef:
+                  name: authentik
+                  key: redis-password
 
         # Server configuration
         server:
@@ -59,26 +64,28 @@ spec:
               cpu: 500m
               memory: 1Gi
 
+          # Allow scheduling on control plane if no workers
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
+
           # Ingress configuration
           ingress:
             enabled: true
             ingressClassName: traefik
             annotations:
-              cert-manager.io/cluster-issuer: "letsencrypt-prod"  # If you have cert-manager
-              external-dns.alpha.kubernetes.io/target: "your-cluster-ip-or-domain"
+              traefik.ingress.kubernetes.io/router.entrypoints: websecure
+              external-dns.alpha.kubernetes.io/target: "auto"
             hosts:
-              - host: auth.kraleo.win  # CHANGE THIS
+              - host: auth.kraleo.win  # UPDATE THIS
                 paths:
                   - path: "/"
                     pathType: Prefix
             tls:
               - secretName: authentik-tls
                 hosts:
-                  - auth.kraleo.win  # CHANGE THIS
-
-          # Service configuration
-          service:
-            type: ClusterIP
+                  - auth.kraleo.win  # UPDATE THIS
 
         # Worker configuration
         worker:
@@ -92,16 +99,18 @@ spec:
               cpu: 500m
               memory: 1Gi
 
-        # Persistence for media files
-        persistence:
-          enabled: true
-          size: 5Gi
-          # storageClass: ""  # Use default storage class
+          # Allow scheduling on control plane if no workers
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
 
-        # Metrics (optional)
-        prometheus:
-          serviceMonitor:
-            enabled: false  # Enable if you have Prometheus operator
+        # Persistence for media files
+        postgresql:
+          enabled: false  # We deploy it separately
+
+        redis:
+          enabled: false  # We deploy it separately
 
   destination:
     server: https://kubernetes.default.svc
@@ -114,15 +123,8 @@ spec:
     syncOptions:
       - CreateNamespace=true
     retry:
-      limit: 3
+      limit: 5
       backoff:
         duration: 5s
         factor: 2
         maxDuration: 3m
-
-  # Wait for dependencies
-  ignoreDifferences:
-    - group: apps
-      kind: Deployment
-      jsonPointers:
-        - /spec/replicas
