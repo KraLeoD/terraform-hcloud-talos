@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://charts.bitnami.com/bitnami
     chart: postgresql
-    targetRevision: 17.6.0
+    targetRevision: 16.4.2
     helm:
       values: |
         # PostgreSQL configuration
@@ -20,12 +20,6 @@ spec:
           secretKeys:
             adminPasswordKey: postgres-password
             userPasswordKey: password
-        
-        # Explicitly set working image versions
-        image:
-          registry: docker.io
-          repository: bitnami/postgresql
-          tag: 17.2.0-debian-12-r5
         
         # Primary configuration
         primary:
@@ -53,13 +47,9 @@ spec:
             max_connections = 200
             shared_buffers = 128MB
         
-        # Metrics exporter
+        # Metrics
         metrics:
           enabled: true
-          image:
-            registry: docker.io
-            repository: bitnami/postgres-exporter
-            tag: 0.16.0-debian-12-r7
           serviceMonitor:
             enabled: false
   
@@ -93,7 +83,7 @@ spec:
   source:
     repoURL: https://charts.bitnami.com/bitnami
     chart: redis
-    targetRevision: 20.3.0
+    targetRevision: 20.5.5
     helm:
       values: |
         # Redis configuration
@@ -103,12 +93,6 @@ spec:
           enabled: true
           existingSecret: redis
           existingSecretPasswordKey: redis-password
-        
-        # Explicitly set working image version
-        image:
-          registry: docker.io
-          repository: bitnami/redis
-          tag: 7.4.2-debian-12-r3
         
         master:
           persistence:
@@ -137,10 +121,6 @@ spec:
         # Metrics
         metrics:
           enabled: true
-          image:
-            registry: docker.io
-            repository: bitnami/redis-exporter
-            tag: 1.66.0-debian-12-r3
           serviceMonitor:
             enabled: false
   
