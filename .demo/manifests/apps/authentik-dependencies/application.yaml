@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://charts.bitnami.com/bitnami
     chart: postgresql
-    targetRevision: 17.6.0-debian-12-r4
+    targetRevision: 17.6.0
     helm:
       values: |
         # PostgreSQL configuration
