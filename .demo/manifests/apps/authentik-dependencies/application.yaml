@@ -16,17 +16,17 @@ spec:
         # PostgreSQL configuration
         auth:
           enablePostgresUser: true
-          postgresPassword: "CHANGEME-postgres-password"
-          username: authentik
-          password: "CHANGEME-authentik-password"
-          database: authentik
+          existingSecret: postgresql
+          secretKeys:
+            adminPasswordKey: postgres-password
+            userPasswordKey: password
         
         # Primary configuration
         primary:
           persistence:
             enabled: true
             size: 8Gi
-            storageClass: ""  # Use default storage class
+            storageClass: "local-path"
           
           resources:
             requests:
@@ -36,20 +36,22 @@ spec:
               cpu: 500m
               memory: 512Mi
           
+          # Allow scheduling on control plane if no workers
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
+          
           # PostgreSQL configuration
           extendedConfiguration: |
             max_connections = 200
             shared_buffers = 128MB
         
-        # Backup configuration (optional)
-        backup:
-          enabled: false
-        
         # Metrics
         metrics:
           enabled: true
           serviceMonitor:
-            enabled: false  # Enable if you have Prometheus operator
+            enabled: false
   
   destination:
     server: https://kubernetes.default.svc
@@ -62,7 +64,7 @@ spec:
     syncOptions:
       - CreateNamespace=true
     retry:
-      limit: 3
+      limit: 5
       backoff:
         duration: 5s
         factor: 2
@@ -89,13 +91,14 @@ spec:
         
         auth:
           enabled: true
-          password: "CHANGEME-redis-password"
+          existingSecret: redis
+          existingSecretPasswordKey: redis-password
         
         master:
           persistence:
             enabled: true
             size: 2Gi
-            storageClass: ""  # Use default storage class
+            storageClass: "local-path"
           
           resources:
             requests:
@@ -104,6 +107,12 @@ spec:
             limits:
               cpu: 200m
               memory: 256Mi
+          
+          # Allow scheduling on control plane if no workers
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
         
         # Disable replica for simple setup
         replica:
@@ -113,7 +122,7 @@ spec:
         metrics:
           enabled: true
           serviceMonitor:
-            enabled: false  # Enable if you have Prometheus operator
+            enabled: false
   
   destination:
     server: https://kubernetes.default.svc
@@ -126,7 +135,7 @@ spec:
     syncOptions:
       - CreateNamespace=true
     retry:
-      limit: 3
+      limit: 5
       backoff:
         duration: 5s
         factor: 2
