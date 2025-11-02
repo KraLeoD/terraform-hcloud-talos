@@ -20,11 +20,11 @@ module "talos" {
 
   # Control plane configuration
   control_plane_count       = 1
-  control_plane_server_type = "cx23"
+  control_plane_server_type = "cx33"
 
   # Worker configuration
   worker_count       = 1
-  worker_server_type = "cx23"
+  worker_server_type = "cx33"
 
   # Network configuration
   network_ipv4_cidr = "10.0.0.0/16"
