@@ -13,18 +13,37 @@ spec:
     targetRevision: 2024.10.4
     helm:
       values: |
-        # Authentik configuration
+        # Authentik configuration - uses EXISTING encrypted secret "authentik"
         authentik:
-          secret_key: "CHANGE-ME-TO-A-RANDOM-50-CHAR-STRING"
+          # Secret key from existing Kubernetes secret
+          secret_key:
+            valueFrom:
+              secretKeyRef:
+                name: authentik  # ← Your existing secret name
+                key: secret-key
+          
           error_reporting:
             enabled: false
+          
+          # PostgreSQL configuration
           postgresql:
             host: "authentik-postgresql"
             name: "authentik"
             user: "authentik"
-            password: "CHANGE-ME-STRONG-PASSWORD"
+            password:
+              valueFrom:
+                secretKeyRef:
+                  name: authentik  # ← Your existing secret name
+                  key: db-password
+          
+          # Redis configuration
           redis:
             host: "authentik-redis-master"
+            password:
+              valueFrom:
+                secretKeyRef:
+                  name: authentik  # ← Your existing secret name
+                  key: redis-password
 
         # Server configuration
         server:
@@ -43,6 +62,8 @@ spec:
           ingress:
             enabled: true
             ingressClassName: traefik
+            annotations:
+              traefik.ingress.kubernetes.io/router.entrypoints: websecure
             hosts:
               - auth.kraleo.win
             tls:
@@ -70,8 +91,12 @@ spec:
           enabled: true
           auth:
             username: authentik
-            password: "CHANGE-ME-STRONG-PASSWORD"
             database: authentik
+            # Use EXISTING secret "authentik"
+            existingSecret: authentik
+            secretKeys:
+              adminPasswordKey: db-password
+              userPasswordKey: db-password
           primary:
             persistence:
               enabled: true
@@ -81,6 +106,9 @@ spec:
               requests:
                 cpu: 250m
                 memory: 256Mi
+              limits:
+                cpu: 500m
+                memory: 512Mi
             tolerations:
               - key: node-role.kubernetes.io/control-plane
                 operator: Exists
@@ -92,7 +120,9 @@ spec:
           architecture: standalone
           auth:
             enabled: true
-            password: "CHANGE-ME-STRONG-REDIS-PASSWORD"
+            # Use EXISTING secret "authentik"
+            existingSecret: authentik
+            existingSecretPasswordKey: redis-password
           master:
             persistence:
               enabled: true
@@ -102,6 +132,9 @@ spec:
               requests:
                 cpu: 100m
                 memory: 128Mi
+              limits:
+                cpu: 200m
+                memory: 256Mi
             tolerations:
               - key: node-role.kubernetes.io/control-plane
                 operator: Exists
