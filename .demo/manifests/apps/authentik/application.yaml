@@ -10,52 +10,25 @@ spec:
   source:
     repoURL: https://charts.goauthentik.io
     chart: authentik
-    targetRevision: 2024.8.3
+    targetRevision: 2024.10.4
     helm:
       values: |
-        # Global configuration
-        global:
-          # Use environment variables from secrets
-          envFrom:
-            - secretRef:
-                name: authentik
-
+        # Authentik configuration
         authentik:
-          # Use secret for secret_key
-          secret_key:
-            valueFrom:
-              secretKeyRef:
-                name: authentik
-                key: secret-key
-
-          # Error reporting
+          secret_key: "CHANGE-ME-TO-A-RANDOM-50-CHAR-STRING"
           error_reporting:
             enabled: false
-
-          # PostgreSQL configuration
           postgresql:
-            host: "postgresql"
+            host: "authentik-postgresql"
             name: "authentik"
             user: "authentik"
-            password:
-              valueFrom:
-                secretKeyRef:
-                  name: authentik
-                  key: db-password
-
-          # Redis configuration
+            password: "CHANGE-ME-STRONG-PASSWORD"
           redis:
-            host: "redis-master"
-            password:
-              valueFrom:
-                secretKeyRef:
-                  name: authentik
-                  key: redis-password
+            host: "authentik-redis-master"
 
         # Server configuration
         server:
           replicas: 1
-
           resources:
             requests:
               cpu: 100m
@@ -63,34 +36,23 @@ spec:
             limits:
               cpu: 500m
               memory: 1Gi
-
-          # Allow scheduling on control plane if no workers
           tolerations:
             - key: node-role.kubernetes.io/control-plane
               operator: Exists
               effect: NoSchedule
-
-          # Ingress configuration
           ingress:
             enabled: true
             ingressClassName: traefik
-            annotations:
-              traefik.ingress.kubernetes.io/router.entrypoints: websecure
-              external-dns.alpha.kubernetes.io/target: "auto"
             hosts:
-              - host: auth.kraleo.win  # UPDATE THIS
-                paths:
-                  - path: "/"
-                    pathType: Prefix
+              - auth.kraleo.win
             tls:
               - secretName: authentik-tls
                 hosts:
-                  - auth.kraleo.win  # UPDATE THIS
+                  - auth.kraleo.win
 
         # Worker configuration
         worker:
           replicas: 1
-
           resources:
             requests:
               cpu: 100m
@@ -98,19 +60,52 @@ spec:
             limits:
               cpu: 500m
               memory: 1Gi
-
-          # Allow scheduling on control plane if no workers
           tolerations:
             - key: node-role.kubernetes.io/control-plane
               operator: Exists
               effect: NoSchedule
 
-        # Persistence for media files
+        # Enable PostgreSQL subchart
         postgresql:
-          enabled: false  # We deploy it separately
+          enabled: true
+          auth:
+            username: authentik
+            password: "CHANGE-ME-STRONG-PASSWORD"
+            database: authentik
+          primary:
+            persistence:
+              enabled: true
+              size: 8Gi
+              storageClass: local-path
+            resources:
+              requests:
+                cpu: 250m
+                memory: 256Mi
+            tolerations:
+              - key: node-role.kubernetes.io/control-plane
+                operator: Exists
+                effect: NoSchedule
 
+        # Enable Redis subchart
         redis:
-          enabled: false  # We deploy it separately
+          enabled: true
+          architecture: standalone
+          auth:
+            enabled: true
+            password: "CHANGE-ME-STRONG-REDIS-PASSWORD"
+          master:
+            persistence:
+              enabled: true
+              size: 2Gi
+              storageClass: local-path
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+            tolerations:
+              - key: node-role.kubernetes.io/control-plane
+                operator: Exists
+                effect: NoSchedule
 
   destination:
     server: https://kubernetes.default.svc
