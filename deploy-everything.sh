@@ -350,6 +350,7 @@ print_section "PHASE 6: Create Namespaces and Secrets"
 print_step "Creating namespaces..."
 kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
 kubectl create namespace external-dns --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace cert-manager --dry-run=client -o yaml | kubectl apply -f -
 kubectl create namespace authentik --dry-run=client -o yaml | kubectl apply -f -
 
 print_info "✅ Namespaces created"
