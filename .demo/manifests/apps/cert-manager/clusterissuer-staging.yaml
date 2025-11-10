@@ -1,0 +1,21 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    # Let's Encrypt staging server
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: admin@kraleo.de
+    privateKeySecretRef:
+      name: letsencrypt-staging
+    solvers:
+      # DNS-01 challenge using Cloudflare
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: apiToken
+        selector:
+          dnsZones:
+            - kraleo.de

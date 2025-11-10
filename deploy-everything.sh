@@ -368,6 +368,11 @@ kubectl create secret generic cloudflare-api-token \
     -n external-dns \
     --dry-run=client -o yaml | kubectl apply -f -
 
+kubectl create secret generic cloudflare-api-token \
+    --from-literal=apiToken="$CLOUDFLARE_API_TOKEN" \
+    -n cert-manager \
+    --dry-run=client -o yaml | kubectl apply -f -
+
 print_info "✅ Cloudflare credentials stored"
 
 # ============================================

@@ -4,6 +4,10 @@ resources:
   - nginx
   - traefik.yaml
   - external-dns/application.yaml
+  - cert-manager/application.yaml
+  - cert-manager/clusterissuers-application.yaml
+  - traefik-middleware/application.yaml
   - local-path-provisioner/
 #  - authentik-dependencies/application.yaml
   - authentik/application.yaml
+  - silverbullet/application.yaml

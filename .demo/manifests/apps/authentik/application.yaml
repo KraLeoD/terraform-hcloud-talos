@@ -48,6 +48,11 @@ spec:
         # Server configuration
         server:
           replicas: 1
+          env:
+            - name: AUTHENTIK_HOST
+              value: https://auth.kraleo.de
+            - name: AUTHENTIK_INSECURE
+              value: "false"
           resources:
             requests:
               cpu: 100m
@@ -64,12 +69,14 @@ spec:
             ingressClassName: traefik
             annotations:
               traefik.ingress.kubernetes.io/router.entrypoints: websecure
+              cert-manager.io/cluster-issuer: letsencrypt-production
+              external-dns.alpha.kubernetes.io/target: "true"
             hosts:
-              - auth.kraleo.win
+              - auth.kraleo.de
             tls:
               - secretName: authentik-tls
                 hosts:
-                  - auth.kraleo.win
+                  - auth.kraleo.de
 
         # Worker configuration
         worker:
