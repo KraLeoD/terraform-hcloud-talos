@@ -9,8 +9,8 @@ spec:
   project: default
   source:
     path: .demo/manifests/apps
-    repoURL: https://github.com/KraLeoD/terraform-hcloud-talos  # UPDATE THIS!
-    targetRevision: main  # or master, depending on your branch
+    repoURL: https://github.com/KraLeoD/terraform-hcloud-talos
+    targetRevision: claude/enhance-cluster-deployment-011CUyitAwQXycAoeb7oEx51  # Feature branch with DNS/TLS/Authentik
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
