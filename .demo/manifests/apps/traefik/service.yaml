@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik-external
+  namespace: traefik
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: "auth.kraleo.win,notes.kraleo.win"
+spec:
+  type: ClusterIP
+  # IMPORTANT: Set this to your node's public IP after deployment
+  # Get it with: kubectl get nodes -o wide
+  # Or from terraform output: terraform output cluster_endpoint
+  externalIPs:
+    - "YOUR_NODE_PUBLIC_IP_HERE"  # Replace with actual node IP
+  ports:
+    - name: web
+      port: 80
+      targetPort: 80
+      protocol: TCP
+    - name: websecure
+      port: 443
+      targetPort: 443
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: traefik

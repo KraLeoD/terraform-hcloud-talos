@@ -11,7 +11,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/KraLeoD/terraform-hcloud-talos
-    targetRevision: main
+    targetRevision: claude/enhance-cluster-deployment-011CUyitAwQXycAoeb7oEx51
     path: .demo/manifests/apps/cert-manager
     directory:
       include: "clusterissuer-*.yaml"

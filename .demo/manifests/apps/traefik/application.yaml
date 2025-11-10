@@ -1,22 +1,23 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: silverbullet
+  name: traefik-service
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"  # Deploy after Traefik Helm chart
 spec:
   project: default
   source:
     repoURL: https://github.com/KraLeoD/terraform-hcloud-talos
     targetRevision: claude/enhance-cluster-deployment-011CUyitAwQXycAoeb7oEx51
-    path: .demo/manifests/apps/silverbullet
+    path: .demo/manifests/apps/traefik
     directory:
-      include: "*.yaml"
-      exclude: "application.yaml"
+      include: "service.yaml"
   destination:
     server: https://kubernetes.default.svc
-    namespace: silverbullet
+    namespace: traefik
   syncPolicy:
     automated:
       prune: true
