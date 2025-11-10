@@ -62,7 +62,7 @@ spec:
 
         # Domain filter - will be set via configmap or you can hardcode it here
           domainFilters:
-            - kraleo.de
+            - kraleo.win
 
         # Extra arguments
         extraArgs:

@@ -50,7 +50,7 @@ spec:
           replicas: 1
           env:
             - name: AUTHENTIK_HOST
-              value: https://auth.kraleo.de
+              value: https://auth.kraleo.win
             - name: AUTHENTIK_INSECURE
               value: "false"
           resources:
@@ -72,11 +72,11 @@ spec:
               cert-manager.io/cluster-issuer: letsencrypt-production
               external-dns.alpha.kubernetes.io/target: "true"
             hosts:
-              - auth.kraleo.de
+              - auth.kraleo.win
             tls:
               - secretName: authentik-tls
                 hosts:
-                  - auth.kraleo.de
+                  - auth.kraleo.win
 
         # Worker configuration
         worker:

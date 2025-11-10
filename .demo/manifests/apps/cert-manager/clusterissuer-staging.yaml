@@ -6,7 +6,7 @@ spec:
   acme:
     # Let's Encrypt staging server
     server: https://acme-staging-v02.api.letsencrypt.org/directory
-    email: admin@kraleo.de
+    email: admin@kraleo.win
     privateKeySecretRef:
       name: letsencrypt-staging
     solvers:
@@ -18,4 +18,4 @@ spec:
               key: apiToken
         selector:
           dnsZones:
-            - kraleo.de
+            - kraleo.win
