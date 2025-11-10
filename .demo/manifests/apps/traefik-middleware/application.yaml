@@ -5,11 +5,13 @@ metadata:
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"  # Deploy after Traefik and its CRDs
 spec:
   project: default
   source:
     repoURL: https://github.com/KraLeoD/terraform-hcloud-talos
-    targetRevision: main
+    targetRevision: claude/enhance-cluster-deployment-011CUyitAwQXycAoeb7oEx51
     path: .demo/manifests/apps/traefik-middleware
     directory:
       include: "*.yaml"

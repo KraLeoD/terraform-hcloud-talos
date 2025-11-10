@@ -67,7 +67,6 @@ spec:
         # Extra arguments
         extraArgs:
           - --cloudflare-proxied  # Enable Cloudflare proxy (orange cloud)
-          - --annotation-filter=external-dns.alpha.kubernetes.io/target  # Only process ingresses with this annotation
 
   destination:
     server: https://kubernetes.default.svc
