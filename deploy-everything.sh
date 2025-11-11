@@ -526,8 +526,17 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     print_section "PHASE 9.5: Configure Traefik for External DNS"
 
-    print_step "Waiting for Traefik to be ready..."
-    kubectl wait --for=condition=available --timeout=300s deployment/traefik -n traefik 2>/dev/null || print_warn "Traefik deployment not found yet"
+    print_step "Waiting for ArgoCD to sync applications..."
+    print_info "This may take 3-5 minutes for all apps to sync..."
+    sleep 30  # Give ArgoCD time to start syncing
+
+    # Wait for Traefik application to be created and synced
+    print_step "Waiting for Traefik application to sync..."
+    timeout 300 bash -c 'until kubectl get application traefik -n argocd 2>/dev/null | grep -q "Synced"; do echo "  Waiting for Traefik..."; sleep 10; done' || print_warn "Traefik application not synced yet"
+
+    # Wait for traefik-service application to be created and synced
+    print_step "Waiting for traefik-service application to sync..."
+    timeout 300 bash -c 'until kubectl get application traefik-service -n argocd 2>/dev/null | grep -q "Synced"; do echo "  Waiting for traefik-service..."; sleep 10; done' || print_warn "traefik-service application not synced yet"
 
     print_step "Getting node public IP..."
     NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}')
@@ -542,15 +551,25 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         print_info "Node IP detected: $NODE_IP"
 
         print_step "Waiting for traefik-external service to be created..."
-        timeout 120 bash -c 'until kubectl get service traefik-external -n traefik 2>/dev/null; do sleep 2; done' || print_warn "Service not created yet"
+        timeout 180 bash -c 'until kubectl get service traefik-external -n traefik 2>/dev/null; do echo "  Still waiting for service..."; sleep 5; done' || print_warn "Service not created after 3 minutes"
 
         if kubectl get service traefik-external -n traefik &>/dev/null; then
             print_step "Configuring Traefik service with node IP..."
             kubectl patch service traefik-external -n traefik --type='json' -p="[{\"op\": \"replace\", \"path\": \"/spec/externalIPs\", \"value\": [\"$NODE_IP\"]}]"
             print_info "✅ Traefik service configured with IP: $NODE_IP"
             print_info "⏳ DNS records will be created automatically in 2-3 minutes"
+
+            # Verify configuration
+            CONFIGURED_IP=$(kubectl get service traefik-external -n traefik -o jsonpath='{.spec.externalIPs[0]}' 2>/dev/null)
+            if [ "$CONFIGURED_IP" = "$NODE_IP" ]; then
+                print_info "✅ Verified: Service configured correctly"
+            else
+                print_warn "⚠️  Verification failed. Please check manually."
+            fi
         else
-            print_warn "⚠️  traefik-external service not found. You may need to configure it manually later."
+            print_warn "⚠️  traefik-external service not found after waiting."
+            print_info "Manual configuration required:"
+            echo "  kubectl patch service traefik-external -n traefik --type='json' -p='[{\"op\": \"replace\", \"path\": \"/spec/externalIPs\", \"value\": [\"$NODE_IP\"]}]'"
         fi
     else
         print_warn "⚠️  Could not determine node IP. Please configure manually:"
