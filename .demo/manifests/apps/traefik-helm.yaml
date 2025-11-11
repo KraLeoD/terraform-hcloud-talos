@@ -16,14 +16,20 @@ spec:
         # Use DaemonSet - runs on all nodes
         deployment:
           kind: DaemonSet
-        
+
+        # Update strategy for DaemonSet with hostNetwork
+        updateStrategy:
+          type: RollingUpdate
+          rollingUpdate:
+            maxUnavailable: 2  # Required when using hostNetwork
+
         # Use host network - direct port 80/443 access
         hostNetwork: true
-        
+
         # Don't need a service with host network
         service:
           enabled: false
-        
+
         ports:
           web:
             port: 8000
@@ -33,7 +39,7 @@ spec:
             hostPort: 443
             tls:
               enabled: true
-        
+
         logs:
           general:
             level: INFO
