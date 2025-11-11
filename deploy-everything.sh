@@ -519,6 +519,43 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     print_step "Deploying app-root..."
     kubectl apply -f .demo/manifests/app-root.yaml
     print_info "✅ App-root deployed"
+
+    # ============================================
+    # PHASE 9.5: Configure Traefik External Service
+    # ============================================
+
+    print_section "PHASE 9.5: Configure Traefik for External DNS"
+
+    print_step "Waiting for Traefik to be ready..."
+    kubectl wait --for=condition=available --timeout=300s deployment/traefik -n traefik 2>/dev/null || print_warn "Traefik deployment not found yet"
+
+    print_step "Getting node public IP..."
+    NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}')
+
+    if [ -z "$NODE_IP" ]; then
+        print_warn "⚠️  Could not detect node external IP automatically"
+        print_info "Attempting to get from Terraform output..."
+        cd .demo && NODE_IP=$(terraform output -raw cluster_endpoint 2>/dev/null) && cd ..
+    fi
+
+    if [ -n "$NODE_IP" ]; then
+        print_info "Node IP detected: $NODE_IP"
+
+        print_step "Waiting for traefik-external service to be created..."
+        timeout 120 bash -c 'until kubectl get service traefik-external -n traefik 2>/dev/null; do sleep 2; done' || print_warn "Service not created yet"
+
+        if kubectl get service traefik-external -n traefik &>/dev/null; then
+            print_step "Configuring Traefik service with node IP..."
+            kubectl patch service traefik-external -n traefik --type='json' -p="[{\"op\": \"replace\", \"path\": \"/spec/externalIPs\", \"value\": [\"$NODE_IP\"]}]"
+            print_info "✅ Traefik service configured with IP: $NODE_IP"
+            print_info "⏳ DNS records will be created automatically in 2-3 minutes"
+        else
+            print_warn "⚠️  traefik-external service not found. You may need to configure it manually later."
+        fi
+    else
+        print_warn "⚠️  Could not determine node IP. Please configure manually:"
+        echo "  kubectl patch service traefik-external -n traefik --type='json' -p='[{\"op\": \"replace\", \"path\": \"/spec/externalIPs\", \"value\": [\"YOUR_NODE_IP\"]}]'"
+    fi
 else
     print_warn "Skipped app-root deployment"
     echo "You can deploy it later with:"

@@ -7,11 +7,12 @@ metadata:
     external-dns.alpha.kubernetes.io/hostname: "auth.kraleo.win,notes.kraleo.win"
 spec:
   type: ClusterIP
-  # IMPORTANT: Set this to your node's public IP after deployment
-  # Get it with: kubectl get nodes -o wide
-  # Or from terraform output: terraform output cluster_endpoint
+  # Node IP is automatically configured by deploy-everything.sh
+  # If needed, manually patch with:
+  #   kubectl patch service traefik-external -n traefik --type='json' \
+  #     -p='[{"op": "replace", "path": "/spec/externalIPs", "value": ["YOUR_IP"]}]'
   externalIPs:
-    - "YOUR_NODE_PUBLIC_IP_HERE"  # Replace with actual node IP
+    - "0.0.0.0"  # Placeholder - will be replaced with actual node IP
   ports:
     - name: web
       port: 80
