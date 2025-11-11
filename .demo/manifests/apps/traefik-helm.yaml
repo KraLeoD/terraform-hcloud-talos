@@ -32,11 +32,13 @@ spec:
 
         ports:
           web:
-            port: 8000
-            hostPort: 80
+            port: 80
+            expose: true
+            exposedPort: 80
           websecure:
-            port: 8443
-            hostPort: 443
+            port: 443
+            expose: true
+            exposedPort: 443
             tls:
               enabled: true
 
