@@ -1,0 +1,33 @@
+# Terraform state files
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Sensitive cluster configs - NEVER commit these!
+kubeconfig
+talosconfig
+
+# Variable files that might contain secrets
+*.auto.tfvars
+terraform.tfvars
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Local overrides
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI config
+.terraformrc
+terraform.rc
+
+# SOPS Secret Management
+.secrets-backup-*.txt
+*.secrets.backup
+*secret*.yaml.dec
+*secret*.yaml.decrypted

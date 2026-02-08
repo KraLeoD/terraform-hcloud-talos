@@ -1,0 +1,61 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: local-path-provisioner
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"  # Deploy before apps that need storage
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/rancher/local-path-provisioner
+    targetRevision: v0.0.28
+    path: deploy/chart/local-path-provisioner
+    helm:
+      values: |
+        # Use /var/lib/rancher/local-path-provisioner for storage
+        # This is a good location on Talos nodes
+        nodePathMap:
+          - node: DEFAULT_PATH_FOR_NON_LISTED_NODES
+            paths:
+              - /var/lib/rancher/local-path-provisioner
+        
+        # Storage class configuration
+        storageClass:
+          create: true
+          name: local-path
+          defaultClass: true
+          reclaimPolicy: Delete
+        
+        # Resource limits
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+        
+        # Run on all nodes
+        nodeSelector: {}
+        tolerations:
+          - operator: Exists
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: local-path-storage
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

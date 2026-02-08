@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik-external
+  namespace: traefik
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: "auth.kraleo.win,notes.kraleo.win"
+spec:
+  type: ClusterIP
+  # Node IP is automatically configured by deploy-everything.sh
+  # If needed, manually patch with:
+  #   kubectl patch service traefik-external -n traefik --type='json' \
+  #     -p='[{"op": "replace", "path": "/spec/externalIPs", "value": ["YOUR_IP"]}]'
+  externalIPs:
+    - "0.0.0.0"  # Placeholder - will be replaced with actual node IP
+  ports:
+    - name: web
+      port: 80
+      targetPort: 80
+      protocol: TCP
+    - name: websecure
+      port: 443
+      targetPort: 443
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: traefik

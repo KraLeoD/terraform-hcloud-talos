@@ -1,0 +1,164 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: authentik
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://charts.goauthentik.io
+    chart: authentik
+    targetRevision: 2024.10.4
+    helm:
+      values: |
+        # Authentik configuration - uses EXISTING encrypted secret "authentik"
+        authentik:
+          # Secret key from existing Kubernetes secret
+          secret_key:
+            valueFrom:
+              secretKeyRef:
+                name: authentik  # ← Your existing secret name
+                key: secret-key
+          
+          error_reporting:
+            enabled: false
+          
+          # PostgreSQL configuration
+          postgresql:
+            host: "authentik-postgresql"
+            name: "authentik"
+            user: "authentik"
+            password:
+              valueFrom:
+                secretKeyRef:
+                  name: authentik  # ← Your existing secret name
+                  key: db-password
+          
+          # Redis configuration
+          redis:
+            host: "authentik-redis-master"
+            password:
+              valueFrom:
+                secretKeyRef:
+                  name: authentik  # ← Your existing secret name
+                  key: redis-password
+
+        # Server configuration
+        server:
+          replicas: 1
+          env:
+            - name: AUTHENTIK_HOST
+              value: https://auth.kraleo.win
+            - name: AUTHENTIK_INSECURE
+              value: "false"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            annotations:
+              traefik.ingress.kubernetes.io/router.entrypoints: websecure
+              cert-manager.io/cluster-issuer: letsencrypt-production
+            hosts:
+              - auth.kraleo.win
+            tls:
+              - secretName: authentik-tls
+                hosts:
+                  - auth.kraleo.win
+
+        # Worker configuration
+        worker:
+          replicas: 1
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
+
+        # Enable PostgreSQL subchart
+        postgresql:
+          enabled: true
+          auth:
+            username: authentik
+            database: authentik
+            # Use EXISTING secret "authentik"
+            existingSecret: authentik
+            secretKeys:
+              adminPasswordKey: db-password
+              userPasswordKey: db-password
+          primary:
+            persistence:
+              enabled: true
+              size: 8Gi
+              storageClass: local-path
+            resources:
+              requests:
+                cpu: 250m
+                memory: 256Mi
+              limits:
+                cpu: 500m
+                memory: 512Mi
+            tolerations:
+              - key: node-role.kubernetes.io/control-plane
+                operator: Exists
+                effect: NoSchedule
+
+        # Enable Redis subchart
+        redis:
+          enabled: true
+          architecture: standalone
+          auth:
+            enabled: true
+            # Use EXISTING secret "authentik"
+            existingSecret: authentik
+            existingSecretPasswordKey: redis-password
+          master:
+            persistence:
+              enabled: true
+              size: 2Gi
+              storageClass: local-path
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: 200m
+                memory: 256Mi
+            tolerations:
+              - key: node-role.kubernetes.io/control-plane
+                operator: Exists
+                effect: NoSchedule
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: authentik
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: traefik-middleware
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"  # Deploy after Traefik and its CRDs
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/KraLeoD/terraform-hcloud-talos
+    targetRevision: claude/enhance-cluster-deployment-011CUyitAwQXycAoeb7oEx51
+    path: .demo/manifests/apps/traefik-middleware
+    directory:
+      include: "*.yaml"
+      exclude: "application.yaml"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: traefik
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

@@ -1,0 +1,142 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: postgresql
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    # For OCI, include chart name in repoURL and remove chart field
+    repoURL: oci://registry-1.docker.io/bitnamicharts/postgresql
+    targetRevision: latest
+    helm:
+      values: |
+        # PostgreSQL configuration
+        auth:
+          enablePostgresUser: true
+          existingSecret: postgresql
+          secretKeys:
+            adminPasswordKey: postgres-password
+            userPasswordKey: password
+        
+        # Primary configuration
+        primary:
+          persistence:
+            enabled: true
+            size: 8Gi
+            storageClass: "local-path"
+          
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          
+          # Allow scheduling on control plane if no workers
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
+          
+          # PostgreSQL configuration
+          extendedConfiguration: |
+            max_connections = 200
+            shared_buffers = 128MB
+        
+        # Metrics
+        metrics:
+          enabled: true
+          serviceMonitor:
+            enabled: false
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: authentik
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: redis
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    # For OCI, include chart name in repoURL and remove chart field
+    repoURL: oci://registry-1.docker.io/bitnamicharts/redis
+    targetRevision: 23.2.2
+    helm:
+      values: |
+        # Redis configuration
+        architecture: standalone
+        
+        auth:
+          enabled: true
+          existingSecret: redis
+          existingSecretPasswordKey: redis-password
+        
+        master:
+          persistence:
+            enabled: true
+            size: 2Gi
+            storageClass: "local-path"
+          
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          
+          # Allow scheduling on control plane if no workers
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
+        
+        # Disable replica for simple setup
+        replica:
+          replicaCount: 0
+        
+        # Metrics
+        metrics:
+          enabled: true
+          serviceMonitor:
+            enabled: false
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: authentik
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
