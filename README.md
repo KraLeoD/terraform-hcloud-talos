@@ -73,8 +73,13 @@ This repository contains a Terraform module for creating a Kubernetes cluster wi
   default Flannel.
 - It provides a lot of features like Network Policies, Load Balancing, and more.
 
-> [!IMPORTANT]  
+> [!IMPORTANT]
 > The Cilium version (`cilium_version`) has to be compatible with the Kubernetes (`kubernetes_version`) version.
+
+> [!TIP]
+> After initial cluster bootstrap, you can set `deploy_cilium = false` (and `deploy_prometheus_operator_crds = false` if you used it) to hand off management to GitOps tools (e.g., Argo CD, Flux).
+> Run `terraform apply` once after toggling: Terraform removes these resources from state without deleting them from the cluster.
+> This works because the module uses `kubectl_manifest` with `apply_only = true`, so Terraform does not delete these manifests on destroy.
 
 ### [Hcloud Cloud Controller Manager](https://github.com/hetznercloud/hcloud-cloud-controller-manager)
 
@@ -85,11 +90,24 @@ This repository contains a Terraform module for creating a Kubernetes cluster wi
 - Watches Services with `type: LoadBalancer` and creates Hetzner Cloud Load Balancers for them, adds Kubernetes
   Nodes as targets for the Load Balancer.
 
+> [!TIP]
+> After initial cluster bootstrap, you can set `deploy_hcloud_ccm = false` to hand off management to GitOps tools (e.g., Argo CD, Flux).
+> Run `terraform apply` once after toggling: Terraform removes these resources from state without deleting them from the cluster.
+> This works because the module uses `kubectl_manifest` with `apply_only = true`, so Terraform does not delete these manifests on destroy.
+
 ### [Talos Cloud Controller Manager](https://github.com/siderolabs/talos-cloud-controller-manager)
 
 - [Applies labels to the nodes](https://github.com/siderolabs/talos-cloud-controller-manager?tab=readme-ov-file#node-initialize).
 - [Validates and approves node CSRs](https://github.com/siderolabs/talos-cloud-controller-manager?tab=readme-ov-file#node-certificate-approval).
 - In DaemonSet mode: CCM will use hostNetwork and current node to access kubernetes/talos API
+
+### [Tailscale](https://tailscale.com/) (Optional)
+
+- The Talos Image **MUST** be created with the [tailscale extension](https://github.com/siderolabs/extensions/blob/main/network/tailscale/README.md) when `tailscale.enabled` is set to true.
+- Tailscale can be enabled as a system extension on all nodes
+- Provides secure, encrypted networking between your nodes and other devices in your Tailscale network
+- Makes cluster nodes accessible via their Tailscale IPs from anywhere
+- Requires a valid Tailscale auth key to be provided in the configuration
 
 ## Prerequisites
 
@@ -109,7 +127,7 @@ This repository contains a Terraform module for creating a Kubernetes cluster wi
 
 > [!TIP]
 > If you don't have a Hetzner account yet, you are welcome to use
-> this [Hetzner Cloud Referral Link](https://hetzner.cloud/?ref=6Q6Q6Q6Q6Q6Q) to claim 20€ credit and support
+> this [Hetzner Cloud Referral Link](https://hetzner.cloud/?ref=9EF3RYocQW8y) to claim 20€ credit and support
 > this project.
 
 - Create a new project in the Hetzner Cloud Console
@@ -202,6 +220,12 @@ module "talos" {
   node_ipv4_cidr    = "10.0.1.0/24"
   pod_ipv4_cidr     = "10.0.16.0/20"
   service_ipv4_cidr = "10.0.8.0/21"
+  
+  # Enable Tailscale integration
+  tailscale = {
+    enabled  = true
+    auth_key = "tskey-auth-xxxxxxxxxxxx" # Your Tailscale auth key
+  }
 }
 ```
 
@@ -290,6 +314,27 @@ Remember to move the generated config files to a persistent location if needed (
 e.g., `~/.kube/config`, `~/.talos/config`).
 
 ## Additional Configuration Examples
+
+### Tailscale Integration
+
+This module supports configuring Tailscale on your cluster nodes, which provides secure networking capabilities:
+
+```hcl
+tailscale = {
+  enabled  = true
+  auth_key = "tskey-auth-xxxxxxxxxxxx" # Your Tailscale auth key
+}
+```
+
+When Tailscale is enabled:
+- Each node will run Tailscale as a system extension
+- Nodes will automatically connect to your Tailscale network
+- Cilium's loadBalancer acceleration is set to "best-effort" mode for compatibility with Tailscale
+- You can access your cluster nodes directly via their Tailscale IPs
+
+> [!NOTE]
+> You must provide a valid Tailscale auth key when enabling this feature. Auth keys can be generated in the Tailscale admin console.
+> For more information, see the [Tailscale documentation on authentication keys](https://tailscale.com/kb/1085/auth-keys/).
 
 ### Kubelet Extra Args
 

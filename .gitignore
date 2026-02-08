@@ -262,5 +262,8 @@ debug.tf
 
 .aider*
 
+.idea/copilot.data.*.xml
+.idea/AICommit.xml
+.idea/go.imports.xml
 # SOPS encryption keys - NEVER commit these!
 .sops/age.agekey

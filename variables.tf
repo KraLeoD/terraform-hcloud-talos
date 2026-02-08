@@ -63,12 +63,25 @@ variable "output_mode_config_cluster_endpoint" {
 }
 
 # Firewall
+variable "firewall_id" {
+  type        = string
+  default     = null
+  description = <<EOF
+    ID of an existing Hetzner Cloud firewall to use instead of creating one.
+    When set, the module will not create a firewall and will use this ID instead.
+    This is useful to avoid chicken-and-egg issues when your IP changes:
+    manage the firewall externally and pass its ID here.
+  EOF
+}
+
 variable "firewall_use_current_ip" {
   type        = bool
   default     = false
   description = <<EOF
     If true, the current IP address will be used as the source for the firewall rules.
-    ATTENTION: to determine the current IP, a request to a public service (https://ipv4.icanhazip.com) is made.
+    ATTENTION: to determine the current IP, requests to public services are made:
+    - IPv4 address is always fetched from https://ipv4.icanhazip.com
+    - IPv6 address is only fetched from https://ipv6.icanhazip.com if enable_ipv6 = true
   EOF
 }
 
@@ -201,15 +214,16 @@ variable "control_plane_server_type" {
   type        = string
   description = <<EOF
     The server type to use for the control plane nodes.
-    Possible values: cx11, cx21, cx22, cx23,  cx31, cx32, cx41, cx42, cx51, cx52, cpx11, cpx21, cpx31,
-    cpx41, cpx51, cax11, cax21, cax31, cax41, ccx13, ccx23, ccx33, ccx43, ccx53, ccx63
+    Possible values: cpx11, cpx12, cpx21, cpx22, cpx31, cpx32, cpx41, cpx42, cpx51, cpx52, cpx62,
+    cax11, cax21, cax31, cax41, ccx13, ccx23, ccx33, ccx43, ccx53, ccx63,
+    cx22, cx23, cx32, cx33, cx42, cx43, cx52, cx53
   EOF
   validation {
     condition = contains([
-      "cx11", "cx21", "cx22", "cx23", "cx31", "cx32", "cx33", "cx41", "cx42", "cx51", "cx52",
-      "cpx11", "cpx21", "cpx22", "cpx31", "cpx32", "cpx41", "cpx51",
+      "cpx11", "cpx12", "cpx21", "cpx22", "cpx31", "cpx32", "cpx41", "cpx42", "cpx51", "cpx52", "cpx62",
       "cax11", "cax21", "cax31", "cax41",
-      "ccx13", "ccx23", "ccx33", "ccx43", "ccx53", "ccx63"
+      "ccx13", "ccx23", "ccx33", "ccx43", "ccx53", "ccx63",
+      "cx22", "cx23", "cx32", "cx33", "cx42", "cx43", "cx52", "cx53"
     ], var.control_plane_server_type)
     error_message = "Invalid control plane server type."
   }
@@ -239,18 +253,19 @@ variable "worker_count" {
 
 variable "worker_server_type" {
   type        = string
-  default     = "cx11"
+  default     = "cpx11"
   description = <<EOF
     DEPRECATED: Use worker_nodes instead. The server type to use for the worker nodes.
-    Possible values: cx11, cx21, cx22, cx31, cx32, cx41, cx42, cx51, cx52, cpx11, cpx21, cpx31,
-    cpx41, cpx51, cax11, cax21, cax31, cax41, ccx13, ccx23, ccx33, ccx43, ccx53, ccx63
+    Possible values: cpx11, cpx12, cpx21, cpx22, cpx31, cpx32, cpx41, cpx42, cpx51, cpx52, cpx62,
+    cax11, cax21, cax31, cax41, ccx13, ccx23, ccx33, ccx43, ccx53, ccx63,
+    cx22, cx23, cx32, cx33, cx42, cx43, cx52, cx53
   EOF
   validation {
     condition = contains([
-      "cx11", "cx21", "cx22", "cx23", "cx31", "cx32", "cx33", "cx41", "cx42", "cx51", "cx52",
-      "cpx11", "cpx21", "cpx22", "cpx31", "cpx32", "cpx41", "cpx51",
+      "cpx11", "cpx12", "cpx21", "cpx22", "cpx31", "cpx32", "cpx41", "cpx42", "cpx51", "cpx52", "cpx62",
       "cax11", "cax21", "cax31", "cax41",
-      "ccx13", "ccx23", "ccx33", "ccx43", "ccx53", "ccx63"
+      "ccx13", "ccx23", "ccx33", "ccx43", "ccx53", "ccx63",
+      "cx22", "cx23", "cx32", "cx33", "cx42", "cx43", "cx52", "cx53"
     ], var.worker_server_type)
     error_message = "Invalid worker server type."
   }
@@ -269,7 +284,7 @@ variable "worker_nodes" {
   default     = []
   description = <<EOF
     List of worker node configurations. Each object defines a group of worker nodes with the same configuration.
-    - type: Server type (cx11, cx21, cx22, cx23, cx31, cx32, cx33, cx41, cx42, cx51, cx52, cpx11, cpx21, cpx22, cpx31, cpx32, cpx41, cpx51, cax11, cax21, cax31, cax41, ccx13, ccx23, ccx33, ccx43, ccx53, ccx63)
+    - type: Server type (cpx11, cpx12, cpx21, cpx22, cpx31, cpx32, cpx41, cpx42, cpx51, cpx52, cpx62, cax11, cax21, cax31, cax41, ccx13, ccx23, ccx33, ccx43, ccx53, ccx63, cx22, cx23, cx32, cx33, cx42, cx43, cx52, cx53)
     - count: Number of nodes of this type
     - labels: Map of Kubernetes labels to apply to these nodes (default: {})
     - taints: List of Kubernetes taints to apply to these nodes (default: [])
@@ -297,10 +312,10 @@ variable "worker_nodes" {
   validation {
     condition = alltrue([
       for node in var.worker_nodes : contains([
-        "cx11", "cx21", "cx22", "cx23", "cx31", "cx33", "cx32", "cx41", "cx42", "cx51", "cx52",
-        "cpx11", "cpx21", "cpx22", "cpx31", "cpx32", "cpx41", "cpx51",
+        "cpx11", "cpx12", "cpx21", "cpx22", "cpx31", "cpx32", "cpx41", "cpx42", "cpx51", "cpx52", "cpx62",
         "cax11", "cax21", "cax31", "cax41",
-        "ccx13", "ccx23", "ccx33", "ccx43", "ccx53", "ccx63"
+        "ccx13", "ccx23", "ccx33", "ccx43", "ccx53", "ccx63",
+        "cx22", "cx23", "cx32", "cx33", "cx42", "cx43", "cx52", "cx53"
       ], node.type)
     ])
     error_message = "Invalid worker server type in worker_nodes."
@@ -370,6 +385,23 @@ variable "talos_worker_extra_config_patches" {
   type        = list(string)
   default     = []
   description = "List of additional YAML configuration patches to apply to the Talos machine configuration for worker nodes."
+}
+
+
+variable "tailscale" {
+  type = object({
+    enabled  = optional(bool)
+    auth_key = optional(string)
+  })
+  default = {
+    enabled  = false
+    auth_key = ""
+  }
+  description = "The auth key to use for Tailscale."
+  validation {
+    condition     = var.tailscale.enabled == false || (var.tailscale.enabled == true && var.tailscale.auth_key != "")
+    error_message = "If tailscale is enabled, an auth_key must be provided."
+  }
 }
 
 variable "registries" {
@@ -447,10 +479,49 @@ variable "cilium_enable_service_monitors" {
   EOF
 }
 
+variable "deploy_cilium" {
+  type        = bool
+  default     = true
+  description = <<EOF
+    If true, Cilium CNI will be deployed via Terraform.
+
+    Set to false after initial bootstrap to hand off management to GitOps tools (e.g., Argo CD).
+    After toggling, run `terraform apply` once to remove the Cilium resources from Terraform state.
+
+    Note: This module uses `kubectl_manifest.apply_only = true`, so disabling Cilium in Terraform will not delete it from the cluster.
+  EOF
+}
+
 variable "deploy_prometheus_operator_crds" {
   type        = bool
   default     = false
-  description = "If true, the Prometheus Operator CRDs will be deployed."
+  description = <<EOF
+    If true, the Prometheus Operator CRDs will be deployed via Terraform.
+
+    Set to false after initial bootstrap to hand off management to GitOps tools (e.g., Argo CD).
+    After toggling, run `terraform apply` once to remove the CRDs from Terraform state.
+
+    Note: This module uses `kubectl_manifest.apply_only = true`, so disabling the CRDs in Terraform will not delete them from the cluster.
+  EOF
+}
+
+variable "prometheus_operator_crds_version" {
+  type        = string
+  default     = null
+  description = "The version of the Prometheus Operator CRDs Helm chart to deploy. If not set, the latest version will be used."
+}
+
+variable "deploy_hcloud_ccm" {
+  type        = bool
+  default     = true
+  description = <<EOF
+    If true, the Hetzner Cloud Controller Manager will be deployed via Terraform.
+
+    Set to false after initial bootstrap to hand off management to GitOps tools (e.g., Argo CD).
+    After toggling, run `terraform apply` once to remove the CCM resources from Terraform state.
+
+    Note: This module uses `kubectl_manifest.apply_only = true`, so disabling the CCM in Terraform will not delete it from the cluster.
+  EOF
 }
 
 variable "hcloud_ccm_version" {

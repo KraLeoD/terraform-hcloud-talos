@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - next
 
 permissions: read-all
 
@@ -16,20 +17,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Create GitHub App Token
-        uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
         id: app-token
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: Checkout repository
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
       - name: Semantic Release
-        uses: cycjimmy/semantic-release-action@9cc899c47e6841430bbaedb43de1560a568dfd16 # v5.0.0
+        uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6.0.0
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         with:
-          semantic_version: 25.0.1
+          semantic_version: 25.0.3
           extra_plugins: |
             - conventional-changelog-conventionalcommits@9.1.0

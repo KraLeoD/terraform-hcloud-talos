@@ -3,7 +3,7 @@ locals {
   dummy_workers = local.total_worker_count == 0 ? [{
     index               = 0
     name                = "dummy-worker-0"
-    server_type         = "cx11"
+    server_type         = "cpx11"
     image_id            = null
     ipv4_public         = "0.0.0.0"                           # Fallback
     ipv6_public         = null                                # Fallback
@@ -25,9 +25,6 @@ locals {
       machine = {
         install = {
           image = "ghcr.io/siderolabs/installer:${var.talos_version}"
-          extraKernelArgs = [
-            "ipv6.disable=${var.enable_ipv6 ? 0 : 1}",
-          ]
         }
         certSANs = local.cert_SANs
         kubelet = merge(

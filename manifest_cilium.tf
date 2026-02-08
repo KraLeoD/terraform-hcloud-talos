@@ -1,5 +1,5 @@
 data "helm_template" "cilium_default" {
-  count     = var.cilium_values == null ? 1 : 0
+  count     = var.deploy_cilium && var.cilium_values == null ? 1 : 0
   name      = "cilium"
   namespace = "kube-system"
 
@@ -8,7 +8,7 @@ data "helm_template" "cilium_default" {
   version      = var.cilium_version
   kube_version = var.kubernetes_version
 
-  set = [
+  set = concat([
     {
       name  = "operator.replicas"
       value = var.control_plane_count > 1 ? 2 : 1
@@ -34,8 +34,10 @@ data "helm_template" "cilium_default" {
       value = "false"
     },
     {
+      // tailscale does not support XDP and therefore native fails. with best-effort we can fallthrough without failing!
+      // see more: https://docs.cilium.io/en/stable/network/kubernetes/kubeproxy-free/#loadbalancer-nodeport-xdp-acceleration
       name  = "loadBalancer.acceleration"
-      value = "native"
+      value = var.tailscale.enabled ? "best-effort" : "native"
     },
     {
       name  = "encryption.enabled"
@@ -84,12 +86,14 @@ data "helm_template" "cilium_default" {
     {
       name  = "operator.prometheus.serviceMonitor.enabled"
       value = var.cilium_enable_service_monitors ? "true" : "false"
-    }
-  ]
+    },
+    ],
+  )
+
 }
 
 data "helm_template" "cilium_from_values" {
-  count     = var.cilium_values != null ? 1 : 0
+  count     = var.deploy_cilium && var.cilium_values != null ? 1 : 0
   name      = "cilium"
   namespace = "kube-system"
 
@@ -101,6 +105,7 @@ data "helm_template" "cilium_from_values" {
 }
 
 data "kubectl_file_documents" "cilium" {
+  count = var.deploy_cilium ? 1 : 0
   content = coalesce(
     can(data.helm_template.cilium_from_values[0].manifest) ? data.helm_template.cilium_from_values[0].manifest : null,
     can(data.helm_template.cilium_default[0].manifest) ? data.helm_template.cilium_default[0].manifest : null
@@ -108,7 +113,7 @@ data "kubectl_file_documents" "cilium" {
 }
 
 resource "kubectl_manifest" "apply_cilium" {
-  for_each   = var.control_plane_count > 0 ? data.kubectl_file_documents.cilium.manifests : {}
+  for_each   = var.deploy_cilium && var.control_plane_count > 0 ? data.kubectl_file_documents.cilium[0].manifests : {}
   yaml_body  = each.value
   apply_only = true
   depends_on = [data.http.talos_health]
@@ -120,6 +125,7 @@ data "helm_template" "prometheus_operator_crds" {
   chart        = "prometheus-operator-crds"
   name         = "prometheus-operator-crds"
   repository   = "https://prometheus-community.github.io/helm-charts"
+  version      = var.prometheus_operator_crds_version
   kube_version = var.kubernetes_version
 }
 

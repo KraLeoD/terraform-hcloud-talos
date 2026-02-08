@@ -4,12 +4,12 @@ terraform {
   required_providers {
     hcloud = {
       source  = "hetznercloud/hcloud"
-      version = ">= 1.52.0"
+      version = ">= 1.60.0"
     }
 
     talos = {
       source  = "siderolabs/talos"
-      version = ">= 0.9.0"
+      version = ">= 0.10.1"
     }
 
     http = {
@@ -19,7 +19,7 @@ terraform {
 
     helm = {
       source  = "hashicorp/helm"
-      version = ">= 3.0.2"
+      version = ">= 3.1.1"
     }
 
     kubectl = {
@@ -29,7 +29,7 @@ terraform {
 
     tls = {
       source  = "hashicorp/tls"
-      version = ">= 4.1.0"
+      version = ">= 4.2.1"
     }
   }
 }
